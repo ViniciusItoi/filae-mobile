@@ -41,6 +41,13 @@ class QueueService {
   }
 
   /**
+   * Alias for getQueueById for convenience
+   */
+  async getQueueDetails(queueId: number): Promise<Queue> {
+    return this.getQueueById(queueId);
+  }
+
+  /**
    * Get queue position and details
    */
   async getQueuePosition(queueId: number): Promise<QueuePositionResponse> {
