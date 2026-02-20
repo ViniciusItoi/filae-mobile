@@ -181,6 +181,11 @@ export const SearchEstablishmentsScreen: React.FC<SearchEstablishmentsScreenProp
     navigation.navigate('MyQueues');
   };
 
+  const handleProfileMenuGoQueues = () => {
+    // For MERCHANT - manage their establishment queues
+    navigation.navigate('MyQueues', { screen: 'ManageQueuesMain' });
+  };
+
   const handleProfileMenuLogout = async () => {
     await signOut();
   };
@@ -270,6 +275,7 @@ export const SearchEstablishmentsScreen: React.FC<SearchEstablishmentsScreenProp
         onSearchSubmit={handleSearchSubmit}
         onLogoPress={handleLogoPress}
         onProfileMenuGoProfile={handleProfilePress}
+        onProfileMenuGoQueues={handleProfileMenuGoQueues}
         onProfileMenuGoMyQueues={handleProfileMenuGoMyQueues}
         onProfileMenuLogout={handleProfileMenuLogout}
       />

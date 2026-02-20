@@ -79,3 +79,14 @@ export interface FinishQueueResponse {
   message: string;
 }
 
+export interface MerchantQueuesResponse {
+  queues: Queue[];
+  totalQueues: number;
+}
+
+export interface MerchantStatsResponse {
+  waiting: number;
+  called: number;
+  finished: number;
+  cancelled?: number;
+}

@@ -85,6 +85,12 @@ export const API_CONFIG = {
     QUEUE_BY_ESTABLISHMENT: (establishmentId: number) => `/queues/establishment/${establishmentId}`,
     QUEUE_CALL_NEXT: (establishmentId: number) => `/queues/establishment/${establishmentId}/call-next`,
     QUEUE_FINISH: (id: number) => `/queues/${id}/finish`,
+
+    // Merchant Queue Management
+    QUEUES_MERCHANT_ALL: '/queues/merchant/all',
+    QUEUES_MERCHANT_ACTIVE: '/queues/merchant/active',
+    QUEUES_MERCHANT_BY_ESTABLISHMENT: (establishmentId: number) => `/queues/merchant/establishment/${establishmentId}`,
+    QUEUES_MERCHANT_STATS: '/queues/merchant/stats',
   },
 } as const;
 
