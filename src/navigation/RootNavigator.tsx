@@ -73,6 +73,10 @@ const QueuesStack = () => {
         component={MyQueuesScreen}
       />
       <Stack.Screen
+        name="ManageQueuesMain"
+        component={ManageQueuesScreen}
+      />
+      <Stack.Screen
         name="EstablishmentDetails"
         component={EstablishmentDetailsScreen}
       />

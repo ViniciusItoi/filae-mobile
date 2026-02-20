@@ -151,6 +151,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
     navigation.navigate('MyQueues');
   };
 
+  const handleProfileMenuGoQueues = () => {
+    // For MERCHANT - manage their establishment queues
+    navigation.navigate('ManageQueues');
+  };
+
   const handleProfileMenuLogout = async () => {
     await signOut();
   };
@@ -179,6 +184,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
           onSearchSubmit={handleSearchSubmit}
           onLogoPress={handleLogoPress}
           onProfileMenuGoProfile={handleProfilePress}
+          onProfileMenuGoQueues={handleProfileMenuGoQueues}
           onProfileMenuGoMyQueues={handleProfileMenuGoMyQueues}
           onProfileMenuLogout={handleProfileMenuLogout}
         />
