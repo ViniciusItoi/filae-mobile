@@ -153,7 +153,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 
   const handleProfileMenuGoQueues = () => {
     // For MERCHANT - manage their establishment queues
-    navigation.navigate('ManageQueues');
+    navigation.navigate('MyQueues', { screen: 'ManageQueuesMain' });
   };
 
   const handleProfileMenuLogout = async () => {

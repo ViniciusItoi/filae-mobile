@@ -57,6 +57,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     navigation.navigate('MyQueues');
   };
 
+  const handleProfileMenuGoQueues = () => {
+    // For MERCHANT - manage their establishment queues
+    navigation.navigate('MyQueues', { screen: 'ManageQueuesMain' });
+  };
+
   const handleProfileMenuLogout = async () => {
     await signOut();
   };
@@ -90,6 +95,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
         showProfileButton={false}
         onLogoPress={handleLogoPress}
         onProfileMenuGoProfile={() => {}}
+        onProfileMenuGoQueues={handleProfileMenuGoQueues}
         onProfileMenuGoMyQueues={handleProfileMenuGoMyQueues}
         onProfileMenuLogout={handleProfileMenuLogout}
       />

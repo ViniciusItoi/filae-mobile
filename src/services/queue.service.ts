@@ -17,6 +17,8 @@ import {
   CallNextResponse,
   CancelQueueResponse,
   FinishQueueResponse,
+  MerchantQueuesResponse,
+  MerchantStatsResponse,
 } from '../types';
 
 class QueueService {
@@ -162,6 +164,61 @@ class QueueService {
       (q) => q.establishmentId === establishmentId && q.status === 'WAITING'
     );
     return activeQueue || null;
+  }
+
+  /**
+   * Get all queues for merchant (ordered by date)
+   */
+  async getMerchantAllQueues(): Promise<MerchantQueuesResponse> {
+    const response = await ApiClient.getClient().get<Queue[]>(
+      API_CONFIG.ENDPOINTS.QUEUES_MERCHANT_ALL
+    );
+
+    return {
+      queues: response.data,
+      totalQueues: response.data.length,
+    };
+  }
+
+  /**
+   * Get active queues for merchant (WAITING + CALLED)
+   */
+  async getMerchantActiveQueues(): Promise<MerchantQueuesResponse> {
+    const response = await ApiClient.getClient().get<Queue[]>(
+      API_CONFIG.ENDPOINTS.QUEUES_MERCHANT_ACTIVE
+    );
+
+    return {
+      queues: response.data,
+      totalQueues: response.data.length,
+    };
+  }
+
+  /**
+   * Get queues for specific establishment (merchant only)
+   */
+  async getMerchantEstablishmentQueues(
+    establishmentId: number
+  ): Promise<MerchantQueuesResponse> {
+    const response = await ApiClient.getClient().get<Queue[]>(
+      API_CONFIG.ENDPOINTS.QUEUES_MERCHANT_BY_ESTABLISHMENT(establishmentId)
+    );
+
+    return {
+      queues: response.data,
+      totalQueues: response.data.length,
+    };
+  }
+
+  /**
+   * Get queue statistics for merchant
+   */
+  async getMerchantStats(): Promise<MerchantStatsResponse> {
+    const response = await ApiClient.getClient().get<MerchantStatsResponse>(
+      API_CONFIG.ENDPOINTS.QUEUES_MERCHANT_STATS
+    );
+
+    return response.data;
   }
 }
 

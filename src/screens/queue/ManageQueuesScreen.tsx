@@ -17,8 +17,8 @@ import {
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, typography } from '../../theme';
-import { Queue, EstablishmentQueueResponse } from '../../types';
-import { QueueService, EstablishmentService } from '../../services';
+import { Queue, MerchantStatsResponse } from '../../types';
+import { QueueService } from '../../services';
 import { Header, Card, Badge, Button, EmptyState } from '../../components/common';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -27,63 +27,45 @@ interface ManageQueuesScreenProps {
 }
 
 export const ManageQueuesScreen: React.FC<ManageQueuesScreenProps> = ({ navigation }) => {
-  const { signOut, user } = useAuth();
-  const [queueData, setQueueData] = useState<EstablishmentQueueResponse | null>(null);
+  const { signOut } = useAuth();
+  const [queues, setQueues] = useState<Queue[]>([]);
+  const [stats, setStats] = useState<MerchantStatsResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
-  const [establishmentId, setEstablishmentId] = useState<number | null>(null);
 
   useEffect(() => {
-    loadMerchantEstablishment();
+    loadMerchantQueues();
   }, []);
 
   // Auto-refresh when screen gains focus
   useFocusEffect(
     React.useCallback(() => {
-      if (establishmentId) {
-        loadQueues();
-      }
-    }, [establishmentId])
+      loadMerchantQueues();
+    }, [])
   );
 
   // Auto-refresh every 10 seconds
   useEffect(() => {
-    if (!establishmentId) return;
-
     const interval = setInterval(() => {
-      loadQueues(true); // Silent refresh
+      loadMerchantQueues(true); // Silent refresh
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [establishmentId]);
+  }, []);
 
-  const loadMerchantEstablishment = async () => {
-    try {
-      setLoading(true);
-      // Get merchant's establishment
-      const establishments = await EstablishmentService.getEstablishments({});
-      const merchantEstablishment = establishments.find(e => e.merchantId === user?.id);
-
-      if (merchantEstablishment) {
-        setEstablishmentId(merchantEstablishment.id);
-        await loadQueuesForEstablishment(merchantEstablishment.id);
-      } else {
-        setLoading(false);
-        Alert.alert('Aviso', 'Você não possui um estabelecimento cadastrado.');
-      }
-    } catch (error) {
-      console.error('Erro ao carregar estabelecimento:', error);
-      setLoading(false);
-      Alert.alert('Erro', 'Erro ao carregar seu estabelecimento');
-    }
-  };
-
-  const loadQueuesForEstablishment = async (estId: number, silent = false) => {
+  const loadMerchantQueues = async (silent = false) => {
     try {
       if (!silent) setLoading(true);
-      const data = await QueueService.getEstablishmentQueue(estId);
-      setQueueData(data);
+
+      // Load active queues and stats in parallel
+      const [queuesResponse, statsResponse] = await Promise.all([
+        QueueService.getMerchantActiveQueues(),
+        QueueService.getMerchantStats(),
+      ]);
+
+      setQueues(queuesResponse.queues);
+      setStats(statsResponse);
     } catch (error) {
       console.error('Erro ao carregar filas:', error);
       if (!silent) {
@@ -94,25 +76,22 @@ export const ManageQueuesScreen: React.FC<ManageQueuesScreenProps> = ({ navigati
     }
   };
 
-  const loadQueues = async (silent = false) => {
-    if (!establishmentId) return;
-    await loadQueuesForEstablishment(establishmentId, silent);
-  };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadQueues();
+    await loadMerchantQueues();
     setRefreshing(false);
   };
 
   const handleCallNext = async () => {
-    if (!establishmentId) return;
-
-    const waitingQueues = queueData?.queues.filter(q => q.status === 'WAITING') || [];
+    const waitingQueues = queues.filter(q => q.status === 'WAITING');
     if (waitingQueues.length === 0) {
       Alert.alert('Aviso', 'Não há clientes aguardando na fila.');
       return;
     }
+
+    // Get the establishment ID from the first queue
+    const establishmentId = waitingQueues[0].establishmentId;
 
     try {
       setActionLoading(true);
@@ -120,7 +99,7 @@ export const ManageQueuesScreen: React.FC<ManageQueuesScreenProps> = ({ navigati
       Alert.alert(
         'Cliente Chamado!',
         `Ticket #${response.calledQueue.ticketNumber} foi chamado.\nCliente: ${response.calledQueue.userName}`,
-        [{ text: 'OK', onPress: () => loadQueues() }]
+        [{ text: 'OK', onPress: () => loadMerchantQueues() }]
       );
     } catch (error: any) {
       Alert.alert('Erro', error.message || 'Erro ao chamar próximo cliente');
@@ -142,7 +121,7 @@ export const ManageQueuesScreen: React.FC<ManageQueuesScreenProps> = ({ navigati
               setActionLoading(true);
               await QueueService.finishQueue(queue.id);
               Alert.alert('Sucesso', 'Atendimento finalizado!');
-              await loadQueues();
+              await loadMerchantQueues();
             } catch (error: any) {
               Alert.alert('Erro', error.message || 'Erro ao finalizar atendimento');
             } finally {
@@ -168,7 +147,7 @@ export const ManageQueuesScreen: React.FC<ManageQueuesScreenProps> = ({ navigati
               setActionLoading(true);
               await QueueService.cancelQueue(queue.id);
               Alert.alert('Sucesso', 'Fila cancelada!');
-              await loadQueues();
+              await loadMerchantQueues();
             } catch (error: any) {
               Alert.alert('Erro', error.message || 'Erro ao cancelar fila');
             } finally {
@@ -186,7 +165,7 @@ export const ManageQueuesScreen: React.FC<ManageQueuesScreenProps> = ({ navigati
 
   const handleProfileMenuGoQueues = () => {
     // Already on ManageQueues screen, reload
-    loadQueues();
+    loadMerchantQueues();
   };
 
   const handleProfileMenuLogout = async () => {
@@ -322,29 +301,12 @@ export const ManageQueuesScreen: React.FC<ManageQueuesScreenProps> = ({ navigati
     );
   }
 
-  if (!establishmentId || !queueData) {
-    return (
-      <View style={styles.container}>
-        <Header
-          showSearchInput={false}
-          showProfileButton={true}
-          onLogoPress={handleLogoPress}
-          onProfileMenuGoProfile={handleProfilePress}
-          onProfileMenuGoQueues={handleProfileMenuGoQueues}
-          onProfileMenuLogout={handleProfileMenuLogout}
-        />
-        <EmptyState
-          icon="🏪"
-          title="Sem Estabelecimento"
-          message="Você precisa ter um estabelecimento cadastrado para gerenciar filas."
-        />
-      </View>
-    );
-  }
-
-  const waitingQueues = queueData.queues.filter(q => q.status === 'WAITING');
-  const calledQueues = queueData.queues.filter(q => q.status === 'CALLED');
+  const waitingQueues = queues.filter(q => q.status === 'WAITING');
+  const calledQueues = queues.filter(q => q.status === 'CALLED');
   const allActiveQueues = [...calledQueues, ...waitingQueues];
+
+  // Get establishment name from first queue if available
+  const establishmentName = queues.length > 0 ? queues[0].establishmentName : 'Meu Estabelecimento';
 
   return (
     <View style={styles.container}>
@@ -361,24 +323,26 @@ export const ManageQueuesScreen: React.FC<ManageQueuesScreenProps> = ({ navigati
       {/* Page Title & Stats */}
       <View style={styles.titleContainer}>
         <Text style={styles.pageTitle}>Gerenciar Filas</Text>
-        <Text style={styles.establishmentName}>{queueData.establishment.name}</Text>
+        <Text style={styles.establishmentName}>{establishmentName}</Text>
       </View>
 
       {/* Stats Cards */}
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{queueData.totalWaiting}</Text>
-          <Text style={styles.statLabel}>Aguardando</Text>
+      {stats && (
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.waiting}</Text>
+            <Text style={styles.statLabel}>Aguardando</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.called}</Text>
+            <Text style={styles.statLabel}>Chamados</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.finished}</Text>
+            <Text style={styles.statLabel}>Finalizados</Text>
+          </View>
         </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{queueData.totalCalled}</Text>
-          <Text style={styles.statLabel}>Chamados</Text>
-        </View>
-        <View style={styles.statCard}>
-          <Text style={styles.statValue}>{queueData.averageWaitTime}</Text>
-          <Text style={styles.statLabel}>Tempo Médio</Text>
-        </View>
-      </View>
+      )}
 
       {/* Call Next Button */}
       {waitingQueues.length > 0 && (

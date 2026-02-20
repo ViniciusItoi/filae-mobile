@@ -64,6 +64,11 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation
     navigation.navigate('MyQueues');
   };
 
+  const handleProfileMenuGoQueues = () => {
+    // For MERCHANT - manage their establishment queues
+    navigation.navigate('MyQueues', { screen: 'ManageQueuesMain' });
+  };
+
   const loadUserProfile = async () => {
     try {
       setLoading(true);
@@ -169,6 +174,7 @@ export const EditProfileScreen: React.FC<EditProfileScreenProps> = ({ navigation
         showSearchInput={false}
         showProfileButton={false}
         onLogoPress={handleLogoPress}
+        onProfileMenuGoQueues={handleProfileMenuGoQueues}
         onProfileMenuGoMyQueues={handleProfileMenuGoMyQueues}
         onProfileMenuLogout={handleProfileMenuLogout}
       />
