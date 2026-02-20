@@ -7,7 +7,9 @@ import ApiClient from '../api/client';
 import API_CONFIG from '../config/api.config';
 import {
   Queue,
+  QueueStatus,
   JoinQueueRequest,
+  UpdateQueueRequest,
   JoinQueueResponse,
   QueuePositionResponse,
   MyQueuesResponse,
@@ -22,11 +24,27 @@ class QueueService {
    * Get my active and history queues
    */
   async getMyQueues(): Promise<MyQueuesResponse> {
-    const response = await ApiClient.getClient().get<MyQueuesResponse>(
+    const response = await ApiClient.getClient().get<MyQueuesResponse | Queue[]>(
       API_CONFIG.ENDPOINTS.QUEUES_MY
     );
 
-    return response.data;
+    const data = response.data as any;
+
+    // Backend may return a plain array. Normalize to MyQueuesResponse.
+    if (Array.isArray(data)) {
+      const activeStatuses: QueueStatus[] = ['WAITING', 'CALLED'];
+      const activeQueues = data.filter((q) => activeStatuses.includes(q.status));
+      const historyQueues = data.filter((q) => !activeStatuses.includes(q.status));
+      return { activeQueues, historyQueues };
+    }
+
+    // If already in expected shape, return directly
+    if (data && Array.isArray(data.activeQueues) && Array.isArray(data.historyQueues)) {
+      return data as MyQueuesResponse;
+    }
+
+    // Fallback empty structure
+    return { activeQueues: [], historyQueues: [] };
   }
 
   /**
@@ -38,6 +56,13 @@ class QueueService {
     );
 
     return response.data;
+  }
+
+  /**
+   * Alias for getQueueById for convenience
+   */
+  async getQueueDetails(queueId: number): Promise<Queue> {
+    return this.getQueueById(queueId);
   }
 
   /**
@@ -64,6 +89,18 @@ class QueueService {
   async joinQueue(data: JoinQueueRequest): Promise<JoinQueueResponse> {
     const response = await ApiClient.getClient().post<JoinQueueResponse>(
       API_CONFIG.ENDPOINTS.QUEUE_JOIN,
+      data
+    );
+
+    return response.data;
+  }
+
+  /**
+   * Update queue entry (partySize, notes)
+   */
+  async updateQueue(queueId: number, data: UpdateQueueRequest): Promise<Queue> {
+    const response = await ApiClient.getClient().put<Queue>(
+      API_CONFIG.ENDPOINTS.QUEUE_UPDATE(queueId),
       data
     );
 
@@ -129,4 +166,3 @@ class QueueService {
 }
 
 export default new QueueService();
-

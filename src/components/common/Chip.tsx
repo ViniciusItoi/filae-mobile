@@ -28,7 +28,8 @@ export const Chip: React.FC<ChipProps> = ({
         style,
       ]}
       onPress={onPress}
-      activeOpacity={0.7}>
+      disabled={!onPress}
+      activeOpacity={onPress ? 0.7 : 1}>
       <Text style={[styles.text, selected && styles.textSelected]}>
         {label}
       </Text>

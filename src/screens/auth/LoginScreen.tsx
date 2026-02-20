@@ -1,57 +1,53 @@
 /**
  * Login Screen
- * User authentication screen
+ * Matches prototype design exactly
  */
 
 import React, { useState } from 'react';
 import {
   View,
-  Text,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
+  Text,
   TouchableOpacity,
+  Image,
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Input } from '../../components/common';
-import { useAuth } from '../../contexts/AuthContext';
 import { colors, spacing, typography } from '../../theme';
-import { ApiError } from '../../types';
+import { Input, Button } from '../../components/common';
+import { useAuth } from '../../contexts/AuthContext';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export const LoginScreen: React.FC = () => {
   const { signIn } = useAuth();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const { t } = useTranslation();
+  const [email, setEmail] = useState('alice@example.com');
+  const [password, setPassword] = useState('SecurePass123!');
   const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({ email: '', password: '' });
 
   const validateForm = (): boolean => {
-    let isValid = true;
+    let valid = true;
     const newErrors = { email: '', password: '' };
 
-    // Validate email
     if (!email.trim()) {
       newErrors.email = 'Email é obrigatório';
-      isValid = false;
+      valid = false;
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       newErrors.email = 'Email inválido';
-      isValid = false;
+      valid = false;
     }
 
-    // Validate password
-    if (!password) {
+    if (!password.trim()) {
       newErrors.password = 'Senha é obrigatória';
-      isValid = false;
-    } else if (password.length < 6) {
-      newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
-      isValid = false;
+      valid = false;
     }
 
     setErrors(newErrors);
-    return isValid;
+    return valid;
   };
 
   const handleLogin = async () => {
@@ -61,57 +57,67 @@ export const LoginScreen: React.FC = () => {
 
     try {
       setLoading(true);
-      await signIn({ email: email.trim(), password });
-      // Navigation will be handled by AuthContext
-    } catch (error) {
-      const apiError = error as ApiError;
-      Alert.alert(
-        'Erro ao fazer login',
-        apiError.message || 'Verifique suas credenciais e tente novamente.'
-      );
+      console.log('📝 LoginScreen: Chamando signIn...');
+      await signIn({
+        email,
+        password,
+      });
+      console.log('✅ LoginScreen: signIn concluído com sucesso!');
+    } catch (error: any) {
+      console.error('❌ LoginScreen: Erro no signIn:', error);
+      Alert.alert('Erro de Login', error.message || 'Erro ao fazer login');
     } finally {
       setLoading(false);
+      console.log('🏁 LoginScreen: Loading finalizado');
     }
   };
 
   const handleForgotPassword = () => {
-    Alert.alert(
-      'Recuperar Senha',
-      'Funcionalidade em desenvolvimento. Entre em contato com o suporte.'
-    );
+    Alert.alert('Recuperar Senha', 'Enviaremos um link de recuperação para seu email');
   };
 
   const handleSignUp = () => {
-    Alert.alert(
-      'Criar Conta',
-      'Para criar uma conta, entre em contato com o estabelecimento ou use o portal web.'
-    );
+    Alert.alert('Registrar', 'Funcionalidade de registro em breve');
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        style={styles.keyboardView}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled">
+    <SafeAreaView style={styles.container}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}>
 
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.logo}>Fila[e]</Text>
-            <Text style={styles.subtitle}>
-              Gerencie suas filas de forma inteligente
-            </Text>
+        {/* Purple Card Background */}
+        <View style={styles.purpleCard}>
+          {/* Logo Section */}
+          <View style={styles.logoSection}>
+            <Image
+              source={require('../../assets/images/FILA[e] - Logo Branco Amarelo.png')}
+              style={styles.logo}
+              resizeMode="contain"
+            />
           </View>
 
-          {/* Form */}
-          <View style={styles.form}>
-            <Text style={styles.title}>Entrar</Text>
+          {/* Tagline */}
+          <Text style={styles.tagline}>{t('auth.tagline')}</Text>
 
+          {/* Google Sign-In Button */}
+          <TouchableOpacity style={styles.googleButton} disabled={loading}>
+            <Text style={styles.googleIcon}>🔍</Text>
+            <Text style={styles.googleButtonText}>{t('auth.continueWithGoogle')}</Text>
+          </TouchableOpacity>
+
+          {/* Divider */}
+          <View style={styles.divider}>
+            <View style={styles.dividerLine} />
+            <Text style={styles.dividerText}>{t('auth.orLoginWith')}</Text>
+            <View style={styles.dividerLine} />
+          </View>
+
+          {/* Email Input */}
+          <View style={styles.inputWrapper}>
             <Input
-              label="Email"
-              placeholder="seu@email.com"
+              label={t('auth.email')}
+              placeholder="yourname@gmail.com"
               value={email}
               onChangeText={(text) => {
                 setEmail(text);
@@ -123,9 +129,12 @@ export const LoginScreen: React.FC = () => {
               autoCorrect={false}
               editable={!loading}
             />
+          </View>
 
+          {/* Password Input */}
+          <View style={styles.inputWrapper}>
             <Input
-              label="Senha"
+              label={t('auth.password')}
               placeholder="••••••••"
               value={password}
               onChangeText={(text) => {
@@ -137,65 +146,61 @@ export const LoginScreen: React.FC = () => {
               autoCapitalize="none"
               editable={!loading}
               rightIcon={
-                <Text style={styles.showPasswordText}>
-                  {showPassword ? '🙈' : '👁️'}
-                </Text>
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  disabled={loading}>
+                  <Text style={styles.showPasswordIcon}>
+                    {showPassword ? '🙈' : '👁️'}
+                  </Text>
+                </TouchableOpacity>
               }
-              onRightIconPress={() => setShowPassword(!showPassword)}
             />
+          </View>
+
+          {/* Remember Me & Forgot Password */}
+          <View style={styles.bottomControls}>
+            <TouchableOpacity
+              style={styles.checkboxContainer}
+              onPress={() => setRememberMe(!rememberMe)}
+              disabled={loading}>
+              <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
+                {rememberMe && <Text style={styles.checkmark}>✓</Text>}
+              </View>
+              <Text style={styles.checkboxLabel}>{t('auth.rememberMe')}</Text>
+            </TouchableOpacity>
 
             <TouchableOpacity
               onPress={handleForgotPassword}
-              style={styles.forgotPassword}
               disabled={loading}>
-              <Text style={styles.forgotPasswordText}>
-                Esqueceu a senha?
-              </Text>
+              <Text style={styles.forgotPasswordLink}>{t('auth.forgotPassword')}</Text>
             </TouchableOpacity>
-
-            <Button
-              title="Entrar"
-              onPress={handleLogin}
-              loading={loading}
-              disabled={loading}
-              style={styles.loginButton}
-            />
-
-            {/* Quick Login Buttons (for testing) */}
-            {__DEV__ && (
-              <View style={styles.devButtons}>
-                <Text style={styles.devText}>Debug - Login Rápido:</Text>
-                <Button
-                  title="Alice (Cliente)"
-                  onPress={() => {
-                    setEmail('alice@example.com');
-                    setPassword('SecurePass123!');
-                  }}
-                  variant="outline"
-                  style={styles.devButton}
-                />
-                <Button
-                  title="Tony (Comerciante)"
-                  onPress={() => {
-                    setEmail('tony@tonysrestaurant.com');
-                    setPassword('SecurePass123!');
-                  }}
-                  variant="outline"
-                  style={styles.devButton}
-                />
-              </View>
-            )}
           </View>
 
-          {/* Footer */}
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Não tem uma conta?</Text>
+          {/* Login Button */}
+          <Button
+            title={loading ? t('auth.loggingIn') : t('auth.login')}
+            onPress={handleLogin}
+            loading={loading}
+            disabled={loading}
+            style={styles.loginButton}
+          />
+
+          {/* Sign Up Link */}
+          <View style={styles.signupContainer}>
+            <Text style={styles.signupText}>{t('auth.signupText')} </Text>
             <TouchableOpacity onPress={handleSignUp} disabled={loading}>
-              <Text style={styles.signUpText}> Criar conta</Text>
+              <Text style={styles.signupLink}>{t('auth.signUp')}</Text>
             </TouchableOpacity>
           </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+        </View>
+
+        {/* Terms Footer */}
+        <Text style={styles.termsText}>
+          {t('auth.termsStart')}{' '}
+          <Text style={styles.termsLink}>{t('auth.termsOfService')}</Text> {t('auth.and')}{' '}
+          <Text style={styles.termsLink}>{t('auth.dataProcessing')}</Text>
+        </Text>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -205,81 +210,164 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
-  keyboardView: {
-    flex: 1,
-  },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
   },
-  header: {
-    alignItems: 'center',
-    marginTop: spacing.xxxl,
+  purpleCard: {
+    backgroundColor: '#2D006E',
+    borderBottomLeftRadius: 24,
+    borderBottomRightRadius: 24,
+    padding: spacing.lg,
+    paddingTop: spacing.xl,
+    overflow: 'hidden',
+  },
+  logoSection: {
     marginBottom: spacing.xl,
+    alignItems: 'left',
+    height: 140,
+    justifyContent: 'left',
+    overflow: 'hidden',
   },
   logo: {
-    fontSize: typography.fontSize.xxxl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.primary,
-    marginBottom: spacing.sm,
+    width: 180,
+    height: 180,
+    resizeMode: 'contain',
   },
-  subtitle: {
-    fontSize: typography.fontSize.md,
-    color: colors.textSecondary,
-    textAlign: 'center',
+  tagline: {
+    fontSize: typography.fontSize.xl,
+    fontWeight: typography.fontWeight.semiBold,
+    color: '#FFFFFF',
+    marginBottom: spacing.xl,
+    textAlign: 'left',
+    fontFamily: 'DM Sans',
   },
-  form: {
-    flex: 1,
-  },
-  title: {
-    fontSize: typography.fontSize.xxl,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.text,
-    marginBottom: spacing.lg,
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
-    marginBottom: spacing.lg,
-  },
-  forgotPasswordText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.primary,
-  },
-  showPasswordText: {
-    fontSize: typography.fontSize.lg,
-  },
-  loginButton: {
-    marginTop: spacing.md,
-  },
-  footer: {
+  googleButton: {
+    width: '100%',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: colors.border,
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingVertical: spacing.lg,
+    marginBottom: spacing.lg,
+    gap: spacing.md,
   },
-  footerText: {
+  googleIcon: {
+    fontSize: 20,
+  },
+  googleButtonText: {
     fontSize: typography.fontSize.md,
-    color: colors.textSecondary,
+    fontWeight: typography.fontWeight.medium,
+    color: '#111827',
+    fontFamily: 'DM Sans',
   },
-  signUpText: {
-    fontSize: typography.fontSize.md,
-    color: colors.primary,
-    fontWeight: typography.fontWeight.semiBold,
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginVertical: spacing.lg,
+    gap: spacing.md,
   },
-  devButtons: {
-    marginTop: spacing.xl,
-    padding: spacing.md,
-    backgroundColor: colors.disabled,
-    borderRadius: 8,
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
   },
-  devText: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
+  dividerText: {
+    fontSize: typography.fontSize.xs,
+    color: '#D1D5DB',
     textAlign: 'center',
+    fontFamily: 'DM Sans',
   },
-  devButton: {
-    marginTop: spacing.sm,
+  inputWrapper: {
+    width: '100%',
+    marginBottom: spacing.md,
+  },
+  showPasswordIcon: {
+    fontSize: 18,
+  },
+  bottomControls: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: spacing.md,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxChecked: {
+    backgroundColor: '#FFFFFF',
+    borderColor: '#FFFFFF',
+  },
+  checkmark: {
+    color: '#2D006E',
+    fontSize: 14,
+    fontWeight: typography.fontWeight.bold,
+    fontFamily: 'DM Sans',
+  },
+  checkboxLabel: {
+    fontSize: typography.fontSize.xs,
+    color: '#F3F4F6',
+    fontFamily: 'DM Sans',
+  },
+  forgotPasswordLink: {
+    fontSize: typography.fontSize.xs,
+    color: '#FCD34D',
+    fontWeight: typography.fontWeight.semiBold,
+    fontFamily: 'DM Sans',
+  },
+  loginButton: {
+    width: '100%',
+    marginTop: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  signupContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+    gap: spacing.xs,
+  },
+  signupText: {
+    fontSize: typography.fontSize.xs,
+    color: '#F3F4F6',
+    fontFamily: 'DM Sans',
+  },
+  signupLink: {
+    fontSize: typography.fontSize.xs,
+    color: '#FCD34D',
+    fontWeight: typography.fontWeight.semiBold,
+    fontFamily: 'DM Sans',
+  },
+  termsText: {
+    fontSize: typography.fontSize.xs,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 16,
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.lg,
+    fontFamily: 'DM Sans',
+  },
+  termsLink: {
+    fontWeight: typography.fontWeight.semiBold,
+    color: '#111827',
+    fontFamily: 'DM Sans',
   },
 });
 

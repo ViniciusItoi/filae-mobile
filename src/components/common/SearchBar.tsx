@@ -10,6 +10,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   TextInputProps,
+  Text,
 } from 'react-native';
 import { colors, spacing, borderRadius, typography } from '../../theme';
 
@@ -37,7 +38,10 @@ export const SearchBar: React.FC<SearchBarProps> = ({
       />
 
       {showClear && (
-        <TouchableOpacity style={styles.iconRight} onPress={onClear}>
+        <TouchableOpacity
+          style={styles.iconRight}
+          onPress={onClear}
+          disabled={!onClear}>
           <Text style={styles.icon}>✕</Text>
         </TouchableOpacity>
       )}

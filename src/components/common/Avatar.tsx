@@ -1,17 +1,19 @@
 /**
  * Avatar Component
- * User profile picture or placeholder
+ * User profile picture or placeholder with initials
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Image, Text, StyleSheet, ViewStyle } from 'react-native';
-import { colors, spacing, typography } from '../../theme';
+import { colors } from '../../theme';
 
 interface AvatarProps {
   imageUrl?: string;
   name?: string;
   size?: 'small' | 'medium' | 'large';
   style?: ViewStyle;
+  backgroundColor?: string;
+  textColor?: string;
 }
 
 export const Avatar: React.FC<AvatarProps> = ({
@@ -19,89 +21,87 @@ export const Avatar: React.FC<AvatarProps> = ({
   name,
   size = 'medium',
   style,
+  backgroundColor = colors.primary,
+  textColor = colors.textOnPrimary,
 }) => {
-  const getSize = () => {
-    switch (size) {
+  const [imageLoadError, setImageLoadError] = useState(false);
+
+  // Get dimensions based on size
+  const getSizeDimensions = (s: string) => {
+    switch (s) {
       case 'small':
-        return 32;
+        return { container: 32, font: 12 };
       case 'medium':
-        return 48;
+        return { container: 48, font: 18 };
       case 'large':
-        return 80;
+        return { container: 80, font: 28 };
       default:
-        return 48;
+        return { container: 48, font: 18 };
     }
   };
 
-  const getFontSize = () => {
-    switch (size) {
-      case 'small':
-        return typography.fontSize.sm;
-      case 'medium':
-        return typography.fontSize.lg;
-      case 'large':
-        return typography.fontSize.xxl;
-      default:
-        return typography.fontSize.lg;
-    }
-  };
+  const dimensions = getSizeDimensions(size);
 
+  // Calculate initials
   const getInitials = () => {
-    if (!name) return '?';
-    const names = name.split(' ');
-    if (names.length >= 2) {
-      return (names[0][0] + names[1][0]).toUpperCase();
+    if (!name || name.trim().length === 0) {
+      return '?';
+    }
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
     }
     return name.substring(0, 2).toUpperCase();
   };
 
-  const avatarSize = getSize();
+  const initials = getInitials();
+
+  // Show initials if no image or image failed to load
+  const showInitials = !imageUrl || imageLoadError;
 
   return (
     <View
-      style={[
-        styles.container,
-        {
-          width: avatarSize,
-          height: avatarSize,
-          borderRadius: avatarSize / 2,
-        },
-        style,
-      ]}>
-      {imageUrl ? (
+      style={{
+        width: dimensions.container,
+        height: dimensions.container,
+        borderRadius: dimensions.container / 2,
+        backgroundColor: backgroundColor,
+        justifyContent: 'center',
+        alignItems: 'center',
+        overflow: 'hidden',
+        ...style,
+      }}
+    >
+      {imageUrl && !imageLoadError && (
         <Image
           source={{ uri: imageUrl }}
-          style={[
-            styles.image,
-            {
-              width: avatarSize,
-              height: avatarSize,
-              borderRadius: avatarSize / 2,
-            },
-          ]}
+          style={{
+            width: dimensions.container,
+            height: dimensions.container,
+            borderRadius: dimensions.container / 2,
+          }}
+          onError={() => {
+            console.log('🖼️ [Avatar] IMAGE LOAD FAILED - showing initials instead');
+            setImageLoadError(true);
+          }}
         />
-      ) : (
-        <Text style={[styles.initials, { fontSize: getFontSize() }]}>
-          {getInitials()}
+      )}
+
+      {showInitials && (
+        <Text
+          style={{
+            fontSize: dimensions.font,
+            fontWeight: 'bold',
+            color: textColor,
+            textAlign: 'center',
+          }}
+          numberOfLines={1}
+        >
+          {initials}
         </Text>
       )}
     </View>
   );
 };
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  image: {
-    resizeMode: 'cover',
-  },
-  initials: {
-    color: colors.textOnPrimary,
-    fontWeight: typography.fontWeight.semiBold,
-  },
-});
 

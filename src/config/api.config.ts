@@ -80,6 +80,7 @@ export const API_CONFIG = {
     QUEUES_MY: '/queues/my-queues',
     QUEUE_BY_ID: (id: number) => `/queues/${id}`,
     QUEUE_JOIN: '/queues/join',
+    QUEUE_UPDATE: (id: number) => `/queues/${id}`,
     QUEUE_CANCEL: (id: number) => `/queues/${id}/cancel`,
     QUEUE_BY_ESTABLISHMENT: (establishmentId: number) => `/queues/establishment/${establishmentId}`,
     QUEUE_CALL_NEXT: (establishmentId: number) => `/queues/establishment/${establishmentId}/call-next`,

@@ -17,7 +17,7 @@ import { colors, spacing, borderRadius, typography } from '../../theme';
 interface ButtonProps {
   title: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'outline' | 'text';
+  variant?: 'primary' | 'secondary' | 'outline' | 'text' | 'success' | 'danger';
   loading?: boolean;
   disabled?: boolean;
   style?: ViewStyle;
@@ -39,6 +39,8 @@ export const Button: React.FC<ButtonProps> = ({
     variant === 'secondary' && styles.secondaryButton,
     variant === 'outline' && styles.outlineButton,
     variant === 'text' && styles.textButton,
+    variant === 'success' && styles.successButton,
+    variant === 'danger' && styles.dangerButton,
     (disabled || loading) && styles.disabledButton,
     style,
   ];
@@ -49,6 +51,8 @@ export const Button: React.FC<ButtonProps> = ({
     variant === 'secondary' && styles.secondaryText,
     variant === 'outline' && styles.outlineText,
     variant === 'text' && styles.textButtonText,
+    variant === 'success' && styles.successText,
+    variant === 'danger' && styles.dangerText,
     (disabled || loading) && styles.disabledText,
     textStyle,
   ];
@@ -61,7 +65,11 @@ export const Button: React.FC<ButtonProps> = ({
       activeOpacity={0.7}>
       {loading ? (
         <ActivityIndicator
-          color={variant === 'primary' ? colors.textOnPrimary : colors.primary}
+          color={
+            variant === 'primary' || variant === 'success' || variant === 'danger'
+              ? colors.textOnPrimary
+              : colors.primary
+          }
         />
       ) : (
         <Text style={textStyles}>{title}</Text>
@@ -93,6 +101,12 @@ const styles = StyleSheet.create({
   textButton: {
     backgroundColor: 'transparent',
   },
+  successButton: {
+    backgroundColor: '#22C55E',
+  },
+  dangerButton: {
+    backgroundColor: '#EF4444',
+  },
   disabledButton: {
     backgroundColor: colors.disabled,
     opacity: 0.6,
@@ -100,6 +114,7 @@ const styles = StyleSheet.create({
   text: {
     fontSize: typography.fontSize.md,
     fontWeight: typography.fontWeight.semiBold,
+    fontFamily: 'DM Sans',
   },
   primaryText: {
     color: colors.textOnPrimary,
@@ -112,6 +127,12 @@ const styles = StyleSheet.create({
   },
   textButtonText: {
     color: colors.primary,
+  },
+  successText: {
+    color: '#FFFFFF',
+  },
+  dangerText: {
+    color: '#FFFFFF',
   },
   disabledText: {
     color: colors.textDisabled,

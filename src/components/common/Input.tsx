@@ -73,10 +73,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   label: {
-    fontSize: typography.fontSize.sm,
-    fontWeight: typography.fontWeight.medium,
-    color: colors.text,
+    fontSize: typography.fontSize.lg,
+    fontWeight: typography.fontWeight.semiBold,
+    color: '#FFFFFF',
     marginBottom: spacing.xs,
+    fontFamily: 'DM Sans',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -99,6 +100,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
     fontSize: typography.fontSize.md,
     color: colors.text,
+    fontFamily: 'DM Sans',
   },
   inputWithIconLeft: {
     paddingLeft: spacing.xs,
@@ -114,6 +116,7 @@ const styles = StyleSheet.create({
     color: colors.error,
     marginTop: spacing.xs,
     marginLeft: spacing.xs,
+    fontFamily: 'DM Sans',
   },
 });
 
