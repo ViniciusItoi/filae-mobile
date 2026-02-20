@@ -12,11 +12,13 @@ import { colors, typography } from '../theme';
 
 // Screens
 import { HomeScreen } from '../screens/home/HomeScreen';
+import { SearchEstablishmentsScreen } from '../screens/home/SearchEstablishmentsScreen';
 import { EstablishmentDetailsScreen } from '../screens/establishment/EstablishmentDetailsScreen';
 import { CreateQueueScreen } from '../screens/queue/CreateQueueScreen';
 import { MyQueuesScreen } from '../screens/queue/MyQueuesScreen';
-import { QueueDetailsScreen } from '../screens/queue/QueueDetailsScreen';
-import { ProfileScreen } from '../screens/profile/ProfileScreen';
+import { ManageQueuesScreen } from '../screens/queue/ManageQueuesScreen';
+import { EditQueueScreen } from '../screens/queue/EditQueueScreen';
+import { ProfileScreen, EditProfileScreen } from '../screens/profile';
 import { LoginScreen } from '../screens/auth/LoginScreen';
 
 const Stack = createStackNavigator();
@@ -29,36 +31,29 @@ const HomeStack = () => {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: {
-          backgroundColor: colors.primary,
-        },
-        headerTintColor: colors.textOnPrimary,
-        headerTitleStyle: {
-          fontWeight: '600',
-          fontSize: typography.fontSize.lg,
-        },
+        headerShown: false,
       }}>
       <Stack.Screen
         name="HomeMain"
         component={HomeScreen}
         options={{
-          title: 'Filae - Estabelecimentos',
-          headerShown: true,
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="SearchEstablishments"
+        component={SearchEstablishmentsScreen}
+        options={{
+          headerShown: false,
         }}
       />
       <Stack.Screen
         name="EstablishmentDetails"
         component={EstablishmentDetailsScreen}
-        options={{
-          title: 'Detalhes do Estabelecimento',
-        }}
       />
       <Stack.Screen
         name="CreateQueue"
         component={CreateQueueScreen}
-        options={{
-          title: 'Entrar na Fila',
-        }}
       />
     </Stack.Navigator>
   );
@@ -71,29 +66,23 @@ const QueuesStack = () => {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: {
-          backgroundColor: colors.primary,
-        },
-        headerTintColor: colors.textOnPrimary,
-        headerTitleStyle: {
-          fontWeight: '600',
-          fontSize: typography.fontSize.lg,
-        },
+        headerShown: false,
       }}>
       <Stack.Screen
         name="MyQueuesMain"
         component={MyQueuesScreen}
-        options={{
-          title: 'Minhas Filas',
-          headerShown: true,
-        }}
       />
       <Stack.Screen
-        name="QueueDetails"
-        component={QueueDetailsScreen}
-        options={{
-          title: 'Detalhes da Fila',
-        }}
+        name="EstablishmentDetails"
+        component={EstablishmentDetailsScreen}
+      />
+      <Stack.Screen
+        name="EditQueue"
+        component={EditQueueScreen}
+      />
+      <Stack.Screen
+        name="CreateQueue"
+        component={CreateQueueScreen}
       />
     </Stack.Navigator>
   );
@@ -106,22 +95,15 @@ const ProfileStack = () => {
   return (
     <Stack.Navigator
       screenOptions={{
-        headerStyle: {
-          backgroundColor: colors.primary,
-        },
-        headerTintColor: colors.textOnPrimary,
-        headerTitleStyle: {
-          fontWeight: '600',
-          fontSize: typography.fontSize.lg,
-        },
+        headerShown: false,
       }}>
       <Stack.Screen
         name="ProfileMain"
         component={ProfileScreen}
-        options={{
-          title: 'Meu Perfil',
-          headerShown: true,
-        }}
+      />
+      <Stack.Screen
+        name="EditProfile"
+        component={EditProfileScreen}
       />
     </Stack.Navigator>
   );
@@ -135,18 +117,7 @@ const MainNavigator = () => {
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarStyle: {
-          backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-          paddingBottom: 5,
-        },
-        tabBarLabelStyle: {
-          fontSize: typography.fontSize.xs,
-          marginTop: -8,
-        },
+        tabBarStyle: { display: 'none' },
       }}>
       <Tab.Screen
         name="Home"
@@ -209,5 +180,4 @@ export const RootNavigator = ({ isAuthenticated }: { isAuthenticated: boolean })
     </NavigationContainer>
   );
 };
-
 

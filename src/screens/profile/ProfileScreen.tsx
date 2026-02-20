@@ -1,6 +1,6 @@
 /**
  * Profile Screen
- * User profile information and settings
+ * User profile information and settings - matching Figma prototype "My Profile"
  */
 
 import React, { useState, useEffect } from 'react';
@@ -11,24 +11,33 @@ import {
   Alert,
   ActivityIndicator,
   Text,
+  TouchableOpacity,
 } from 'react-native';
+import { useFocusEffect } from '@react-navigation/native';
 import { colors, spacing, typography } from '../../theme';
 import { User } from '../../types';
-import { UserService, AuthService } from '../../services';
-import { Card, Button, Avatar, Divider } from '../../components/common';
+import { UserService } from '../../services';
+import { Button, Avatar, Header } from '../../components/common';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ProfileScreenProps {
   navigation: any;
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
+  const { signOut } = useAuth();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [loggingOut, setLoggingOut] = useState(false);
 
   useEffect(() => {
     loadUserProfile();
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadUserProfile();
+    }, [])
+  );
 
   const loadUserProfile = async () => {
     try {
@@ -43,35 +52,17 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
     }
   };
 
-  const handleLogout = async () => {
-    Alert.alert(
-      'Fazer Logout',
-      'Tem certeza que deseja sair?',
-      [
-        {
-          text: 'Cancelar',
-          style: 'cancel',
-        },
-        {
-          text: 'Sair',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setLoggingOut(true);
-              await AuthService.logout();
-              navigation.reset({
-                index: 0,
-                routes: [{ name: 'Login' }],
-              });
-            } catch (error) {
-              Alert.alert('Erro', 'Erro ao fazer logout');
-            } finally {
-              setLoggingOut(false);
-            }
-          },
-        },
-      ]
-    );
+  const handleProfileMenuGoMyQueues = () => {
+    // For CUSTOMER - view queues they're in
+    navigation.navigate('MyQueues');
+  };
+
+  const handleProfileMenuLogout = async () => {
+    await signOut();
+  };
+
+  const handleLogoPress = () => {
+    navigation.navigate('Home');
   };
 
   if (loading) {
@@ -92,126 +83,143 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ navigation }) => {
   }
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Profile Header */}
-      <Card>
-        <View style={styles.profileHeader}>
-          <Avatar name={user.name} size="large" />
-          <View style={styles.profileInfo}>
-            <Text style={styles.name}>{user.name}</Text>
-            <Text style={styles.email}>{user.email}</Text>
-            <Text style={styles.userType}>{user.userType}</Text>
+    <View style={styles.container}>
+      {/* Header with search and profile menu */}
+      <Header
+        showSearchInput={false}
+        showProfileButton={false}
+        onLogoPress={handleLogoPress}
+        onProfileMenuGoProfile={() => {}}
+        onProfileMenuGoMyQueues={handleProfileMenuGoMyQueues}
+        onProfileMenuLogout={handleProfileMenuLogout}
+      />
+
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Title */}
+        <Text style={styles.pageTitle}>Meu Perfil</Text>
+
+        {/* Avatar Card */}
+        <View style={styles.avatarCard}>
+          <Avatar
+            name={user.name}
+            imageUrl={user.profilePictureUrl}
+            size="large"
+            backgroundColor="rgba(98, 0, 238, 0.3)"
+            textColor="#FFFFFF"
+          />
+        </View>
+
+        {/* User Info Card - Purple Background */}
+        <View style={styles.infoCard}>
+          {/* Name */}
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Nome</Text>
+            <Text style={styles.infoValue}>{user.name}</Text>
+          </View>
+
+          {/* Email */}
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Email</Text>
+            <Text style={styles.infoValue}>{user.email}</Text>
+          </View>
+
+          {/* Phone */}
+          <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>Telefone</Text>
+            <Text style={styles.infoValue}>{user.phone || '-'}</Text>
           </View>
         </View>
-      </Card>
 
-      {/* Contact Information */}
-      <Card>
-        <Text style={styles.sectionTitle}>📞 Informações de Contato</Text>
-        <Divider spacing="small" />
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Email:</Text>
-          <Text style={styles.infoValue}>{user.email}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Telefone:</Text>
-          <Text style={styles.infoValue}>{user.phone || '-'}</Text>
-        </View>
-      </Card>
+        {/* Edit Button */}
+        <TouchableOpacity
+          style={styles.editButton}
+          onPress={() => navigation.navigate('EditProfile')}
+        >
+          <Text style={styles.editButtonText}>Editar</Text>
+        </TouchableOpacity>
 
-      {/* Account Information */}
-      <Card>
-        <Text style={styles.sectionTitle}>👤 Informações da Conta</Text>
-        <Divider spacing="small" />
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Tipo de Usuário:</Text>
-          <Text style={styles.infoValue}>{user.userType}</Text>
-        </View>
-        <View style={styles.infoRow}>
-          <Text style={styles.infoLabel}>Membro desde:</Text>
-          <Text style={styles.infoValue}>
-            {new Date(user.createdAt).toLocaleDateString('pt-BR')}
-          </Text>
-        </View>
-      </Card>
 
-      {/* Logout Button */}
-      <Card>
-        <Button
-          title={loggingOut ? 'Saindo...' : 'Fazer Logout'}
-          onPress={handleLogout}
-          variant="outline"
-          loading={loggingOut}
-          disabled={loggingOut}
-        />
-      </Card>
-    </ScrollView>
+        <View style={styles.spacing} />
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
-    padding: spacing.md,
+    backgroundColor: colors.backgroundLight,
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.xl,
+  },
+  pageTitle: {
+    fontSize: 20,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.text,
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  avatarCard: {
+    alignItems: 'center',
+    marginVertical: spacing.lg,
+    paddingVertical: spacing.lg,
+    borderRadius: 16,
+    backgroundColor: colors.surface,
+  },
+  infoCard: {
+    backgroundColor: colors.purple,
+    borderRadius: 16,
+    padding: spacing.lg,
+    marginVertical: spacing.lg,
+  },
+  infoRow: {
+    marginBottom: spacing.lg,
+  },
+  infoLabel: {
+    fontSize: 12,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.textSecondaryLight,
+    marginBottom: spacing.xs,
+  },
+  infoValue: {
+    fontSize: 16,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.textOnPurple,
+  },
+  editButton: {
+    backgroundColor: colors.buttonPrimary,
+    paddingVertical: spacing.md,
+    borderRadius: 8,
+    marginVertical: spacing.md,
+    alignItems: 'center',
+  },
+  editButtonText: {
+    fontSize: 16,
+    fontWeight: typography.fontWeight.semiBold,
+    color: colors.textOnPurple,
+  },
+  spacing: {
+    height: spacing.xl,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: colors.background,
+    backgroundColor: colors.backgroundLight,
   },
   errorText: {
-    fontSize: typography.fontSize.md,
+    fontSize: 14,
     color: colors.error,
     textAlign: 'center',
-    marginBottom: spacing.lg,
-  },
-  profileHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.lg,
-  },
-  profileInfo: {
-    flex: 1,
-  },
-  name: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.bold,
-    color: colors.text,
-    marginBottom: spacing.xs,
-  },
-  email: {
-    fontSize: typography.fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
-  },
-  userType: {
-    fontSize: typography.fontSize.sm,
-    color: colors.primary,
-    fontWeight: typography.fontWeight.semiBold,
-  },
-  sectionTitle: {
-    fontSize: typography.fontSize.lg,
-    fontWeight: typography.fontWeight.semiBold,
-    color: colors.text,
-    marginBottom: spacing.sm,
-  },
-  infoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  infoLabel: {
-    fontSize: typography.fontSize.md,
-    color: colors.textSecondary,
-  },
-  infoValue: {
-    fontSize: typography.fontSize.md,
-    color: colors.text,
-    fontWeight: typography.fontWeight.medium,
   },
 });
 

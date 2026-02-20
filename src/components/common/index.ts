@@ -13,4 +13,5 @@ export { EmptyState } from './EmptyState';
 export { LoadingSpinner } from './LoadingSpinner';
 export { Divider } from './Divider';
 export { IconButton } from './IconButton';
-
+export { TopHeaderCard } from './TopHeaderCard';
+export { Header } from './Header';

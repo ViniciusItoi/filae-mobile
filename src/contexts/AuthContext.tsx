@@ -31,6 +31,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     loadStoredUser();
   }, []);
 
+  // Log authentication state changes
+  useEffect(() => {
+    console.log('🔄 AuthContext: isAuthenticated =', !!user, ', user =', user);
+  }, [user]);
+
   const loadStoredUser = async () => {
     try {
       const storedUser = await AuthService.getCurrentUser();
@@ -48,9 +53,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signIn = async (credentials: LoginRequest) => {
     try {
+      console.log('🔐 AuthContext: Iniciando login...');
       const response = await AuthService.login(credentials);
+      console.log('✅ AuthContext: Login bem-sucedido, user:', response.user);
       setUser(response.user);
+      console.log('✅ AuthContext: Estado do user atualizado');
     } catch (error) {
+      console.error('❌ AuthContext: Erro no login:', error);
       throw error;
     }
   };
@@ -70,10 +79,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signOut = async () => {
     try {
+      console.log('🚪 AuthContext: Fazendo logout...');
       await AuthService.logout();
+      console.log('✅ AuthContext: Logout do service concluído');
       setUser(null);
+      console.log('✅ AuthContext: User state atualizado para null');
     } catch (error) {
-      console.error('Error signing out:', error);
+      console.error('❌ AuthContext: Erro ao fazer logout:', error);
     }
   };
 

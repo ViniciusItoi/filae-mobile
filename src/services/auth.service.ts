@@ -18,7 +18,7 @@ class AuthService {
   /**
    * Login user
    */
-  async login(credentials: LoginRequest): Promise<LoginResponse> {
+  async login(credentials: LoginRequest): Promise<{ user: User; token: string }> {
     const response = await ApiClient.getClient().post<LoginResponse>(
       API_CONFIG.ENDPOINTS.LOGIN,
       credentials
@@ -51,7 +51,7 @@ class AuthService {
     console.log('💾 Saving user to storage:', user);
     await StorageService.setItem(API_CONFIG.USER_KEY, user);
 
-    return loginData;
+    return { user, token };
   }
 
   /**

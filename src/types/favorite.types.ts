@@ -7,10 +7,16 @@ import { Establishment } from './establishment.types';
 
 export interface Favorite {
   id: number;
-  userId: number;
   establishmentId: number;
-  establishment: Establishment;
-  createdAt: string;
+  establishmentName?: string;
+  category?: string;
+  city?: string;
+  rating?: number;
+  addedAt?: string | null;
+  // Optional nested establishment when API returns expanded object.
+  establishment?: Establishment;
+  userId?: number;
+  createdAt?: string;
 }
 
 export interface AddFavoriteRequest {
@@ -30,4 +36,3 @@ export interface IsFavoritedResponse {
   isFavorited: boolean;
   favoriteId?: number;
 }
-

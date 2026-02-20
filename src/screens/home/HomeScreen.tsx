@@ -1,171 +1,279 @@
 /**
  * Home Screen
- * List of establishments with search and filter functionality
+ * Rebuilt to match the provided HTML/CSS prototype
  */
 
 import React, { useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
-  FlatList,
-  RefreshControl,
-  ActivityIndicator,
   ScrollView,
+  Text,
+  RefreshControl,
+  TouchableOpacity,
 } from 'react-native';
-import { colors, spacing, typography } from '../../theme';
-import { EstablishmentService } from '../../services';
-import { Establishment } from '../../types';
-import {
-  SearchBar,
-  Chip,
-  EmptyState,
-  LoadingSpinner,
-} from '../../components/common';
-import { EstablishmentCard } from '../../components/establishment';
+import { useFocusEffect } from '@react-navigation/native';
+import { colors, typography } from '../../theme';
+import { useTranslation } from '../../hooks/useTranslation';
+import { useAuth } from '../../contexts/AuthContext';
+import { Header } from '../../components/common';
+import { QueueService, FavoriteService } from '../../services';
+import { Queue, Favorite } from '../../types';
 
 interface HomeScreenProps {
   navigation: any;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
-  const [establishments, setEstablishments] = useState<Establishment[]>([]);
-  const [filteredEstablishments, setFilteredEstablishments] = useState<Establishment[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { t } = useTranslation();
+  const { signOut } = useAuth();
+  const [activeQueue, setActiveQueue] = useState<Queue | null>(null);
+  const [favorites, setFavorites] = useState<Favorite[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [categories, setCategories] = useState<string[]>([]);
 
-  // Load establishments on mount
   useEffect(() => {
-    loadEstablishments();
+    loadData();
   }, []);
 
-  // Filter establishments when search or category changes
-  useEffect(() => {
-    filterEstablishments();
-  }, [searchQuery, selectedCategory, establishments]);
+  // Auto-refresh data when screen gains focus
+  useFocusEffect(
+    React.useCallback(() => {
+      loadData();
+    }, [])
+  );
 
-  const loadEstablishments = async () => {
+  const loadData = async () => {
     try {
-      setLoading(true);
-      const data = await EstablishmentService.getEstablishments();
-      setEstablishments(data);
+      const queues = await QueueService.getMyQueues();
+      const active = queues.activeQueues?.[0] || null;
+      setActiveQueue(active);
 
-      // Extract unique categories
-      const uniqueCategories = Array.from(
-        new Set(data.map(e => e.category))
-      ).sort();
-      setCategories(uniqueCategories);
+      const favoritesData = await FavoriteService.getFavorites();
+      setFavorites(favoritesData || []);
     } catch (error) {
-      console.error('Erro ao carregar estabelecimentos:', error);
-    } finally {
-      setLoading(false);
+      console.error('Erro ao carregar dados:', error);
     }
   };
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadEstablishments();
+    await loadData();
     setRefreshing(false);
   };
 
-  const filterEstablishments = () => {
-    let filtered = [...establishments];
-
-    // Filter by search query
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(e =>
-        e.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        e.city.toLowerCase().includes(searchQuery.toLowerCase())
-      );
+  const handleViewActiveQueueDetails = async () => {
+    if (activeQueue) {
+      // Navigate to EstablishmentDetails for the active queue's establishment
+      try {
+        const EstablishmentService = require('../../services/establishment.service').default;
+        const establishment = await EstablishmentService.getEstablishmentById(activeQueue.establishmentId);
+        navigation.navigate('EstablishmentDetails', { establishment });
+      } catch (error) {
+        console.error('Erro ao carregar estabelecimento:', error);
+        // Fallback: create minimal establishment from queue data
+        navigation.navigate('EstablishmentDetails', {
+          establishment: {
+            id: activeQueue.establishmentId,
+            name: activeQueue.establishmentName,
+            category: 'other',
+            description: '',
+            address: '',
+            city: '',
+            state: '',
+            zipCode: '',
+            phone: '',
+            isAcceptingCustomers: true,
+            queueEnabled: true,
+            averageServiceTime: 0,
+            maxCapacity: 0,
+            currentQueueSize: 0,
+            estimatedWaitTime: activeQueue.estimatedWaitTime || 0,
+            merchantId: 0,
+            createdAt: '',
+            updatedAt: '',
+          }
+        });
+      }
     }
-
-    // Filter by category
-    if (selectedCategory) {
-      filtered = filtered.filter(e => e.category === selectedCategory);
-    }
-
-    setFilteredEstablishments(filtered);
   };
 
-  const handleEstablishmentPress = (establishment: Establishment) => {
-    navigation.navigate('EstablishmentDetails', { establishment });
+  const handleBrowseEstablishments = () => {
+    navigation.navigate('SearchEstablishments');
   };
 
-  if (loading) {
-    return <LoadingSpinner fullScreen={true} message="Carregando estabelecimentos..." />;
-  }
+  const handleSearchSubmit = () => {
+    // Navigate to SearchEstablishments with the search query
+    navigation.navigate('SearchEstablishments', { initialSearch: searchQuery });
+  };
+
+  const handleFavoritePress = async (favorite: Favorite) => {
+    // Navigate to EstablishmentDetails
+    // We need to fetch the full establishment details first
+    try {
+      const EstablishmentService = require('../../services/establishment.service').default;
+      const establishment = await EstablishmentService.getEstablishmentById(favorite.establishmentId);
+      navigation.navigate('EstablishmentDetails', { establishment });
+    } catch (error) {
+      console.error('Erro ao carregar estabelecimento:', error);
+      // Fallback: create a minimal establishment object from favorite data
+      navigation.navigate('EstablishmentDetails', {
+        establishment: {
+          id: favorite.establishmentId,
+          name: favorite.establishmentName,
+          category: favorite.category,
+          city: favorite.city,
+          description: '',
+          address: '',
+          state: '',
+          zipCode: '',
+          phone: '',
+          isAcceptingCustomers: true,
+          queueEnabled: true,
+          averageServiceTime: 0,
+          maxCapacity: 0,
+          currentQueueSize: 0,
+          estimatedWaitTime: 0,
+          merchantId: 0,
+          createdAt: '',
+          updatedAt: '',
+        }
+      });
+    }
+  };
+
+  const handleProfilePress = () => {
+    navigation.navigate('Profile');
+  };
+
+  const handleProfileMenuGoMyQueues = () => {
+    // For CUSTOMER - view queues they're in
+    navigation.navigate('MyQueues');
+  };
+
+  const handleProfileMenuLogout = async () => {
+    await signOut();
+  };
+
+  const handleLogoPress = () => {
+    // Already on Home screen, no navigation needed
+    // Could also use: navigation.navigate('Home');
+  };
 
   return (
     <View style={styles.container}>
-      {/* Search Bar */}
       <ScrollView
-        scrollEnabled={false}
-        style={styles.searchContainer}
-        showsVerticalScrollIndicator={false}>
-        <SearchBar
-          placeholder="Buscar estabelecimento..."
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          onClear={() => setSearchQuery('')}
-          showClear={searchQuery.length > 0}
-        />
-
-        {/* Category Filters */}
-        <View style={styles.categoriesContainer}>
-          <Chip
-            label="Todos"
-            selected={selectedCategory === null}
-            onPress={() => setSelectedCategory(null)}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={colors.primary}
           />
-          {categories.map(category => (
-            <Chip
-              key={category}
-              label={category}
-              selected={selectedCategory === category}
-              onPress={() => setSelectedCategory(category)}
-            />
-          ))}
-        </View>
-      </ScrollView>
+        }>
+        {/* Shared Header (Logo + Purple Card) */}
+        <Header
+          searchPlaceholder={t('home.searchPlaceholderLong')}
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          onSearchSubmit={handleSearchSubmit}
+          onLogoPress={handleLogoPress}
+          onProfileMenuGoProfile={handleProfilePress}
+          onProfileMenuGoMyQueues={handleProfileMenuGoMyQueues}
+          onProfileMenuLogout={handleProfileMenuLogout}
+        />
 
-      {/* Establishments List */}
-      {filteredEstablishments.length > 0 ? (
-        <FlatList
-          data={filteredEstablishments}
-          renderItem={({ item }) => (
-            <EstablishmentCard
-              establishment={item}
-              onPress={() => handleEstablishmentPress(item)}
-            />
-          )}
-          keyExtractor={item => item.id.toString()}
-          contentContainerStyle={styles.listContent}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.primary}
-            />
-          }
-        />
-      ) : (
-        <EmptyState
-          icon="🔍"
-          title="Nenhum estabelecimento encontrado"
-          message={
-            searchQuery || selectedCategory
-              ? 'Tente uma busca diferente ou outro filtro'
-              : 'Nenhum estabelecimento disponível no momento'
-          }
-          actionLabel="Limpar filtros"
-          onAction={() => {
-            setSearchQuery('');
-            setSelectedCategory(null);
-          }}
-        />
-      )}
+        {/* Active Ticket */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t('home.activeTicketTitle')}</Text>
+        </View>
+
+        {activeQueue ? (
+          <TouchableOpacity
+            style={styles.activeTicketCard}
+            onPress={handleViewActiveQueueDetails}
+            activeOpacity={0.8}>
+            {/* Decorative circles */}
+            <View style={styles.circleLarge} />
+            <View style={styles.circleSmall} />
+
+            <Text style={styles.activeTitle}>{activeQueue.establishmentName}</Text>
+            <Text style={styles.activeDistance}>{t('home.distance', '0.8 km de distância')}</Text>
+
+            <View style={styles.activeStatsRow}>
+              <View style={styles.activeStatBox}>
+                <Text style={styles.activeStatLabel}>{t('home.yourPosition')}</Text>
+                <View style={styles.positionRow}>
+                  <Text style={styles.positionValue}>{activeQueue.position}</Text>
+                  <Text style={styles.positionSuffix}>th</Text>
+                </View>
+              </View>
+              <View style={styles.activeStatBox}>
+                <Text style={styles.activeStatLabel}>{t('home.estimatedTime')}</Text>
+                <Text style={styles.activeStatValue}>~{activeQueue.estimatedWaitTime} {t('home.minutes')}</Text>
+              </View>
+            </View>
+
+            <View style={styles.activeFooterRow}>
+              <Text style={styles.ticketNumber}>{t('home.ticketNumber', 'Ticket')} #{activeQueue.ticketNumber}</Text>
+              <Text style={styles.inQueueText}>{t('home.inQueue')}</Text>
+            </View>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.emptyActiveCard}>
+            <Text style={styles.emptyTitle}>Nenhuma fila ativa</Text>
+            <Text style={styles.emptyText}>Você não está em nenhuma fila no momento.</Text>
+            <TouchableOpacity style={styles.browseButton} onPress={handleBrowseEstablishments}>
+              <Text style={styles.browseButtonText}>Buscar estabelecimentos</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Favorites */}
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>{t('home.favoritesTitle')}</Text>
+        </View>
+
+        {favorites.length > 0 ? (
+          <View style={styles.favoritesContainer}>
+            {/* Favorites List */}
+            <View style={styles.recentList}>
+              {favorites.slice(0, 2).map((fav) => (
+                <TouchableOpacity
+                  key={fav.id}
+                  style={styles.recentCard}
+                  onPress={() => handleFavoritePress(fav)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.recentInfo}>
+                    <Text style={styles.recentTitle}>
+                      {fav.establishmentName || fav.establishment?.name || `Estabelecimento #${fav.establishmentId}`}
+                    </Text>
+                    <Text style={styles.recentSubtitle}>
+                      {
+                        [
+                          fav.category || fav.establishment?.category,
+                          fav.city,
+                          fav.rating ? `⭐ ${fav.rating.toFixed(1)}` : null,
+                        ]
+                          .filter(Boolean)
+                          .join(' • ') || t('home.favorite')
+                      }
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        ) : (
+          <View style={styles.emptyActiveCard}>
+            <Text style={styles.emptyTitle}>{t('home.noFavorites')}</Text>
+            <Text style={styles.emptyText}>{t('home.noFavoritesMessage')}</Text>
+          </View>
+        )}
+
+        <View style={styles.bottomSpacing} />
+      </ScrollView>
     </View>
   );
 };
@@ -173,25 +281,180 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#FAFAFA',
+    paddingTop: 0,
   },
-  searchContainer: {
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+  // Header styles live in TopHeaderCard now.
+  sectionHeader: {
+    marginTop: 24,
+    marginBottom: 12,
+    paddingHorizontal: 24,
   },
-  categoriesContainer: {
-    flexDirection: 'row',
-    marginTop: spacing.md,
-    paddingBottom: spacing.sm,
-    gap: spacing.sm,
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: typography.fontWeight.semiBold,
+    color: '#1A1A1A',
+    fontFamily: 'DM Sans',
+  },
+  activeTicketCard: {
+    marginHorizontal: 24,
+    borderRadius: 16,
+    padding: 24,
+    backgroundColor: '#2D006E',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 6,
     overflow: 'hidden',
   },
-  listContent: {
-    padding: spacing.md,
-    paddingTop: spacing.md,
+  circleLarge: {
+    position: 'absolute',
+    width: 128,
+    height: 128,
+    borderRadius: 64,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    top: 64,
+    right: -10,
+  },
+  circleSmall: {
+    position: 'absolute',
+    width: 96,
+    height: 96,
+    borderRadius: 48,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    bottom: -10,
+    left: 24,
+  },
+  activeTitle: {
+    fontSize: 20,
+    color: 'rgba(255,255,255,0.8)',
+    fontFamily: 'DM Sans',
+  },
+  activeDistance: {
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.6)',
+    fontFamily: 'DM Sans',
+    marginTop: 4,
+  },
+  activeStatsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 24,
+  },
+  activeStatBox: {
+    width: '48%',
+  },
+  activeStatLabel: {
+    fontSize: 20,
+    color: 'rgba(255,255,255,0.8)',
+    fontFamily: 'DM Sans',
+  },
+  positionRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: 4,
+    marginTop: 4,
+  },
+  positionValue: {
+    fontSize: 48,
+    fontWeight: typography.fontWeight.bold,
+    color: '#FFFFFF',
+    fontFamily: 'DM Sans',
+  },
+  positionSuffix: {
+    fontSize: 20,
+    color: 'rgba(255,255,255,0.6)',
+    fontFamily: 'DM Sans',
+    marginBottom: 6,
+  },
+  activeStatValue: {
+    fontSize: 24,
+    fontWeight: typography.fontWeight.bold,
+    color: '#FFFFFF',
+    fontFamily: 'DM Sans',
+    marginTop: 4,
+  },
+  activeFooterRow: {
+    marginTop: 24,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  ticketNumber: {
+    fontSize: 20,
+    color: 'rgba(255,255,255,0.8)',
+    fontFamily: 'DM Sans',
+  },
+  inQueueText: {
+    fontSize: 14,
+    color: '#FFC769',
+    fontWeight: typography.fontWeight.semiBold,
+    fontFamily: 'DM Sans',
+  },
+  emptyActiveCard: {
+    marginHorizontal: 24,
+    borderRadius: 16,
+    padding: 24,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: typography.fontWeight.semiBold,
+    color: '#1A1A1A',
+    fontFamily: 'DM Sans',
+    marginBottom: 8,
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#717171',
+    fontFamily: 'DM Sans',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  browseButton: {
+    backgroundColor: '#2D006E',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+  },
+  browseButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontFamily: 'DM Sans',
+  },
+  favoritesContainer: {
+    marginTop: 8,
+  },
+  recentList: {
+    paddingHorizontal: 24,
+    gap: 12,
+    marginTop: 8,
+  },
+  recentCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    borderRadius: 16,
+  },
+  recentInfo: {
+    flex: 1,
+  },
+  recentTitle: {
+    fontSize: 16,
+    fontWeight: typography.fontWeight.medium,
+    color: '#1A1A1A',
+    fontFamily: 'DM Sans',
+  },
+  recentSubtitle: {
+    marginTop: 4,
+    fontSize: 14,
+    color: '#717171',
+    fontFamily: 'DM Sans',
+  },
+  bottomSpacing: {
+    height: 24,
   },
 });
-

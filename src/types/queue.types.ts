@@ -33,6 +33,11 @@ export interface JoinQueueRequest {
   notes?: string;
 }
 
+export interface UpdateQueueRequest {
+  partySize?: number;
+  notes?: string;
+}
+
 export interface JoinQueueResponse {
   queue: Queue;
   message: string;

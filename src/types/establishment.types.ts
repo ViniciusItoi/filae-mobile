@@ -71,6 +71,7 @@ export interface EstablishmentListResponse {
 export interface EstablishmentFilterParams {
   category?: EstablishmentCategory;
   city?: string;
+  name?: string;
   search?: string;
   page?: number;
   pageSize?: number;

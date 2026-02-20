@@ -15,6 +15,10 @@ import { colors } from './src/theme';
 function AppContent() {
   const { loading, isAuthenticated } = useAuth();
 
+  React.useEffect(() => {
+    console.log('🎯 AppContent: loading =', loading, ', isAuthenticated =', isAuthenticated);
+  }, [loading, isAuthenticated]);
+
   if (loading) {
     return null;
   }
@@ -24,7 +28,7 @@ function AppContent() {
       <StatusBar
         barStyle="light-content"
         backgroundColor={colors.primary}
-        translucent={false}
+        translucent={true}
       />
       <RootNavigator isAuthenticated={isAuthenticated} />
     </>
@@ -42,4 +46,3 @@ function App() {
 }
 
 export default App;
-

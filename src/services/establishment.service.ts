@@ -21,6 +21,7 @@ class EstablishmentService {
 
     if (filters?.category) params.category = filters.category;
     if (filters?.city) params.city = filters.city;
+    if (filters?.name) params.name = filters.name;
     if (filters?.search) params.search = filters.search;
     if (filters?.page) params.page = filters.page;
     if (filters?.pageSize) params.pageSize = filters.pageSize;
